@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 
 interface ServerCardProps {
   game: string;
@@ -10,6 +11,24 @@ interface ServerCardProps {
 }
 
 export default function ServerCard({ game, name, currentPlayers, maxPlayers, sessionId, image }: ServerCardProps) {
+  const { toast } = useToast();
+
+  const handleCopySessionId = async () => {
+    try {
+      await navigator.clipboard.writeText(sessionId);
+      toast({
+        title: "ID скопирован!",
+        description: `Сессия ${sessionId} скопирована в буфер обмена`,
+      });
+    } catch (err) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось скопировать ID",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card className="relative overflow-hidden group hover:border-primary transition-all duration-300 bg-card">
       <div className="relative aspect-[4/3] overflow-hidden">
@@ -37,9 +56,13 @@ export default function ServerCard({ game, name, currentPlayers, maxPlayers, ses
             <h4 className="text-white font-bold text-center text-sm uppercase tracking-wide">
               {name}
             </h4>
-            <div className="text-primary text-center text-xs font-mono font-semibold">
+            <button
+              onClick={handleCopySessionId}
+              className="text-primary text-center text-xs font-mono font-semibold hover:text-primary/80 transition-colors cursor-pointer w-full"
+              title="Нажмите, чтобы скопировать"
+            >
               {sessionId}
-            </div>
+            </button>
           </div>
         </div>
       </div>
