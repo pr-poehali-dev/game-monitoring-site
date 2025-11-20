@@ -1,8 +1,15 @@
+import { useState, useMemo } from 'react';
 import Header from '@/components/Header';
 import ServerCard from '@/components/ServerCard';
 import StatsCard from '@/components/StatsCard';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import Icon from '@/components/ui/icon';
 
 const Index = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGame, setSelectedGame] = useState<string>('all');
+
   const servers = [
     {
       id: 1,
@@ -78,8 +85,22 @@ const Index = () => {
     }
   ];
 
-  const totalPlayers = servers.reduce((sum, server) => sum + server.currentPlayers, 0);
-  const totalSlots = servers.reduce((sum, server) => sum + server.maxPlayers, 0);
+  const games = useMemo(() => {
+    const uniqueGames = Array.from(new Set(servers.map(s => s.game)));
+    return ['all', ...uniqueGames];
+  }, []);
+
+  const filteredServers = useMemo(() => {
+    return servers.filter(server => {
+      const matchesSearch = server.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           server.sessionId.includes(searchQuery);
+      const matchesGame = selectedGame === 'all' || server.game === selectedGame;
+      return matchesSearch && matchesGame;
+    });
+  }, [servers, searchQuery, selectedGame]);
+
+  const totalPlayers = filteredServers.reduce((sum, server) => sum + server.currentPlayers, 0);
+  const totalSlots = filteredServers.reduce((sum, server) => sum + server.maxPlayers, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,7 +128,7 @@ const Index = () => {
           />
           <StatsCard 
             title="Активных серверов"
-            value={servers.length}
+            value={filteredServers.length}
             icon="Server"
             suffix="серверов"
           />
@@ -119,10 +140,45 @@ const Index = () => {
           />
         </div>
 
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Icon name="Search" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Поиск по названию или ID сессии..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-card border-border"
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+              {games.map((game) => (
+                <Button
+                  key={game}
+                  variant={selectedGame === game ? 'default' : 'outline'}
+                  onClick={() => setSelectedGame(game)}
+                  className="whitespace-nowrap"
+                >
+                  {game === 'all' ? 'Все игры' : game}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div id="servers" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {servers.map((server) => (
-            <ServerCard key={server.id} {...server} />
-          ))}
+          {filteredServers.length > 0 ? (
+            filteredServers.map((server) => (
+              <ServerCard key={server.id} {...server} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <Icon name="ServerOff" size={48} className="mx-auto text-muted-foreground mb-4" />
+              <p className="text-xl text-muted-foreground">Серверы не найдены</p>
+              <p className="text-sm text-muted-foreground mt-2">Попробуйте изменить параметры поиска</p>
+            </div>
+          )}
         </div>
       </main>
 
